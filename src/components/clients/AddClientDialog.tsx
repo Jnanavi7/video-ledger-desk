@@ -46,7 +46,7 @@ export function AddClientDialog({ open, onOpenChange, onClientAdded }: AddClient
         createdAt: new Date()
       };
 
-      saveClient(newClient);
+      await saveClient(newClient);
       
       toast({
         title: "Success",

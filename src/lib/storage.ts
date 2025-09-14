@@ -1,7 +1,15 @@
-// Local storage utilities for offline data persistence
-// This will be perfect for Tauri's filesystem/SQLite integration later
-
+// Tauri storage utilities for offline data persistence
+import { Store } from '@tauri-apps/plugin-store';
 import { Client, Project, Payment } from '@/types';
+
+let store: Store;
+
+const initStore = async () => {
+  if (!store) {
+    store = await Store.load('app-data.json');
+  }
+  return store;
+};
 
 const STORAGE_KEYS = {
   clients: 'video_editor_clients',
@@ -10,13 +18,15 @@ const STORAGE_KEYS = {
 } as const;
 
 // Client storage
-export const getClients = (): Client[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.clients);
-  return data ? JSON.parse(data) : [];
+export const getClients = async (): Promise<Client[]> => {
+  const storeInstance = await initStore();
+  const data = await storeInstance.get(STORAGE_KEYS.clients);
+  return data ? (data as Client[]) : [];
 };
 
-export const saveClient = (client: Client): void => {
-  const clients = getClients();
+export const saveClient = async (client: Client): Promise<void> => {
+  const storeInstance = await initStore();
+  const clients = await getClients();
   const existingIndex = clients.findIndex(c => c.id === client.id);
   
   if (existingIndex >= 0) {
@@ -25,33 +35,40 @@ export const saveClient = (client: Client): void => {
     clients.push(client);
   }
   
-  localStorage.setItem(STORAGE_KEYS.clients, JSON.stringify(clients));
+  await storeInstance.set(STORAGE_KEYS.clients, clients);
+  await storeInstance.save();
 };
 
-export const deleteClient = (clientId: string): void => {
-  const clients = getClients().filter(c => c.id !== clientId);
-  localStorage.setItem(STORAGE_KEYS.clients, JSON.stringify(clients));
+export const deleteClient = async (clientId: string): Promise<void> => {
+  const storeInstance = await initStore();
+  const clients = (await getClients()).filter(c => c.id !== clientId);
+  await storeInstance.set(STORAGE_KEYS.clients, clients);
   
   // Also remove related projects and payments
-  const projects = getProjects().filter(p => p.clientId !== clientId);
-  localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects));
+  const projects = (await getProjects()).filter(p => p.clientId !== clientId);
+  await storeInstance.set(STORAGE_KEYS.projects, projects);
   
-  const payments = getPayments().filter(p => p.clientId !== clientId);
-  localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(payments));
+  const payments = (await getPayments()).filter(p => p.clientId !== clientId);
+  await storeInstance.set(STORAGE_KEYS.payments, payments);
+  
+  await storeInstance.save();
 };
 
 // Project storage
-export const getProjects = (): Project[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.projects);
-  return data ? JSON.parse(data) : [];
+export const getProjects = async (): Promise<Project[]> => {
+  const storeInstance = await initStore();
+  const data = await storeInstance.get(STORAGE_KEYS.projects);
+  return data ? (data as Project[]) : [];
 };
 
-export const getProjectsByClient = (clientId: string): Project[] => {
-  return getProjects().filter(p => p.clientId === clientId);
+export const getProjectsByClient = async (clientId: string): Promise<Project[]> => {
+  const projects = await getProjects();
+  return projects.filter(p => p.clientId === clientId);
 };
 
-export const saveProject = (project: Project): void => {
-  const projects = getProjects();
+export const saveProject = async (project: Project): Promise<void> => {
+  const storeInstance = await initStore();
+  const projects = await getProjects();
   const existingIndex = projects.findIndex(p => p.id === project.id);
   
   if (existingIndex >= 0) {
@@ -60,26 +77,32 @@ export const saveProject = (project: Project): void => {
     projects.push(project);
   }
   
-  localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects));
+  await storeInstance.set(STORAGE_KEYS.projects, projects);
+  await storeInstance.save();
 };
 
-export const deleteProject = (projectId: string): void => {
-  const projects = getProjects().filter(p => p.id !== projectId);
-  localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects));
+export const deleteProject = async (projectId: string): Promise<void> => {
+  const storeInstance = await initStore();
+  const projects = (await getProjects()).filter(p => p.id !== projectId);
+  await storeInstance.set(STORAGE_KEYS.projects, projects);
+  await storeInstance.save();
 };
 
 // Payment storage
-export const getPayments = (): Payment[] => {
-  const data = localStorage.getItem(STORAGE_KEYS.payments);
-  return data ? JSON.parse(data) : [];
+export const getPayments = async (): Promise<Payment[]> => {
+  const storeInstance = await initStore();
+  const data = await storeInstance.get(STORAGE_KEYS.payments);
+  return data ? (data as Payment[]) : [];
 };
 
-export const getPaymentsByClient = (clientId: string): Payment[] => {
-  return getPayments().filter(p => p.clientId === clientId);
+export const getPaymentsByClient = async (clientId: string): Promise<Payment[]> => {
+  const payments = await getPayments();
+  return payments.filter(p => p.clientId === clientId);
 };
 
-export const savePayment = (payment: Payment): void => {
-  const payments = getPayments();
+export const savePayment = async (payment: Payment): Promise<void> => {
+  const storeInstance = await initStore();
+  const payments = await getPayments();
   const existingIndex = payments.findIndex(p => p.id === payment.id);
   
   if (existingIndex >= 0) {
@@ -88,12 +111,15 @@ export const savePayment = (payment: Payment): void => {
     payments.push(payment);
   }
   
-  localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(payments));
+  await storeInstance.set(STORAGE_KEYS.payments, payments);
+  await storeInstance.save();
 };
 
-export const deletePayment = (paymentId: string): void => {
-  const payments = getPayments().filter(p => p.id !== paymentId);
-  localStorage.setItem(STORAGE_KEYS.payments, JSON.stringify(payments));
+export const deletePayment = async (paymentId: string): Promise<void> => {
+  const storeInstance = await initStore();
+  const payments = (await getPayments()).filter(p => p.id !== paymentId);
+  await storeInstance.set(STORAGE_KEYS.payments, payments);
+  await storeInstance.save();
 };
 
 // Utility functions

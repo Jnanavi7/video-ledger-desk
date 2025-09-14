@@ -6,8 +6,9 @@ import { Client } from '@/types';
 const Index = () => {
   const [clients, setClients] = useState<Client[]>([]);
 
-  const loadClients = () => {
-    setClients(getClients());
+  const loadClients = async () => {
+    const clientData = await getClients();
+    setClients(clientData);
   };
 
   useEffect(() => {
